@@ -1,6 +1,6 @@
 bl_info = {
     'name': 'Face Text — Engrave & Emboss in mm',
-    'author': 'JoeMirai', 'version': (1, 0, 0), 'blender': (4, 2, 0),
+    'author': 'JoeMirai', 'version': (1, 0, 1), 'blender': (4, 2, 0),
     'location': '3D View > Sidebar > Face Text',
     'description': 'Engrave or emboss text on one selected planar face with exact millimeter height and depth',
     'category': 'Mesh',
@@ -11,6 +11,7 @@ from pathlib import Path
 import bpy
 import bmesh
 from mathutils import Matrix, Vector
+from mathutils.geometry import tessellate_polygon, intersect_point_tri_2d
 from bpy.props import StringProperty, FloatProperty, EnumProperty, PointerProperty
 
 
@@ -132,6 +133,20 @@ class FACE_TEXT_OT_create(bpy.types.Operator):
                         (y - (mins[1] + maxs[1]) / 2) * scale,
                         bottom + (z - mins[2]) / thickness * (top - bottom))
             mesh.update()
+            # Test the actual glyph footprint against the selected polygon,
+            # not merely its bounding rectangle (which misses triangular faces).
+            inverse = frame.inverted()
+            polygon = [inverse @ p for p in face_points]
+            polygon = [Vector((p.x, p.y, 0.0)) for p in polygon]
+            triangles = tessellate_polygon([polygon])
+            triangles = [tuple(polygon[v] if isinstance(v, int) else v for v in tri) for tri in triangles]
+            footprint = {(round(v.co.x, 10), round(v.co.y, 10)) for v in mesh.vertices}
+            outside = any(not any(intersect_point_tri_2d(Vector(p),
+                Vector((a.x, a.y)), Vector((b.x, b.y)), Vector((c.x, c.y)))
+                for a, b, c in triangles) for p in footprint)
+            if outside:
+                width = (maxs[0] - mins[0]) * scale / unit
+                raise ValueError(f'Text does not fit this face: {width:.2f} mm wide x {settings.height_mm:g} mm high. Reduce height, rotate 90 degrees, adjust offsets, or select a larger face.')
             helper.matrix_world = frame
             helper.parent = obj
             helper.matrix_world = frame
@@ -211,6 +226,7 @@ class FACE_TEXT_PT_panel(bpy.types.Panel):
         layout.prop(s, 'font_path')
         layout.operator('mesh.face_text_create', icon='FONT_DATA')
         layout.operator('object.face_text_remove', icon='TRASH')
+        layout.label(text='Text must fit inside the selected face.')
         layout.label(text='Height is actual visible text height.')
         layout.label(text='Live Boolean; Ctrl+Z to undo.')
         layout.label(text='New settings apply to the next text.')

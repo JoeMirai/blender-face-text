@@ -58,6 +58,20 @@ for scale_length, transformed in [(1.0,False),(0.001,False),(0.001,True)]:
         assert len(obj.modifiers)==0
         print('PASS',operation,'unit scale',scale_length,'transformed',transformed,'height/depth/Boolean/removal')
 
+# Oversized text must fail without leaving a Boolean or orphan helper.
+obj,unit=setup(0.001)
+s=bpy.context.scene.face_text_settings
+s.height_mm=100
+helpers_before=sum(bool(o.get('face_text_helper')) for o in bpy.data.objects)
+try:
+    result=bpy.ops.mesh.face_text_create()
+except RuntimeError:
+    result={'CANCELLED'}
+assert result=={'CANCELLED'} and obj.mode=='EDIT' and not obj.modifiers
+assert helpers_before==sum(bool(o.get('face_text_helper')) for o in bpy.data.objects)
+s.height_mm=5
+print('PASS oversized text rejected and cleaned up')
+
 # Invalid selection must leave the original untouched.
 obj,unit=setup(0.001)
 bm=bmesh.from_edit_mesh(obj.data)

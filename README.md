@@ -46,7 +46,7 @@ Settings apply to the **next** text operation. To revise a result, choose **Remo
 
 Use a closed solid with outward-facing normals for reliable printable results. Engraving depth should be less than the solid's thickness unless you intend a through-cut. Text is centered on the face's vertex average, with horizontal direction derived from the object's local X axis (local Y fallback); rotation lets you choose its orientation.
 
-The text is not automatically resized or clipped to the face: its entered height stays exact. Choose a height and offsets that keep it within the face. The selected face must be flat; this does not wrap text over curved surfaces. Place text before modifiers that substantially change the selected face's position, or apply those modifiers first. Live Booleans are appended to the modifier stack.
+The text is not automatically resized: its entered height stays exact. The add-on rejects text whose glyph vertices extend outside the selected face and reports the required width and height. Reduce height, rotate, adjust offsets, or choose a larger face. The selected face must be flat; this does not wrap text over curved surfaces. Place text before modifiers that substantially change the selected face's position, or apply those modifiers first. Live Booleans are appended to the modifier stack.
 
 The helper is hidden in the viewport and renders but remains available to the Boolean. It is parented to your object and moves with it. Applying the Boolean bakes the geometry; the hidden helper may then be deleted manually. Fonts are converted to meshes at creation, so recipients of your `.blend` do not need the font file.
 
